@@ -2,6 +2,9 @@ import os
 from fpdf import FPDF
 from datetime import datetime
 
+import logging
+logger = logging.getLogger(__name__)
+
 class ArchitectureDocGenerator:
     def __init__(self):
         self.pdf = FPDF()
@@ -155,10 +158,21 @@ class ArchitectureDocGenerator:
         This architecture ensures scalability, reliability, and security while maintaining high performance.
         """)
         
-        # Save the PDF
-        output_path = "architecture_document.pdf"
-        self.pdf.output(output_path)
-        return output_path
+        output_dir = "/tmp"
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, "architecture_document.pdf")
+        
+        logger.info(f"Attempting to save PDF to: {output_path}")
+        try:
+            self.pdf.output(output_path)
+            if os.path.exists(output_path):
+                logger.info(f"Successfully created PDF file at: {output_path}")
+            else:
+                logger.error(f"CRITICAL: pdf.output completed BUT file not found at {output_path}")
+        except Exception as e:
+            logger.error(f"EXCEPTION during pdf.output: {e}", exc_info=True)
+            raise 
+        return output_path 
 
 if __name__ == "__main__":
     generator = ArchitectureDocGenerator()

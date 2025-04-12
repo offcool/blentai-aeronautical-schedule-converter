@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -9,20 +10,18 @@ import logging
 from dotenv import load_dotenv
 import httpx
 import google.generativeai as genai
+from .architecture_doc_generator import ArchitectureDocGenerator
 
-# Load environment variables
 load_dotenv()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Aeronautical Schedule Converter API")
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,13 +53,13 @@ async def convert_schedule(request: ScheduleRequest):
         }
         
         try:
-            # Initialize the primary model
+            #primary model
             model = genai.GenerativeModel(
                 model_name="gemini-1.5-pro",
                 generation_config=generation_config
             )
             
-            # Create the prompt using the exact template provided
+            #prompt created using the exact template provided
             prompt = f"""
             You are an expert aeronautical information specialist tasked with converting natural language schedule descriptions into standardized AIXM 5.1.1 XML format.
 
@@ -116,14 +115,9 @@ async def convert_schedule(request: ScheduleRequest):
             # Extract the XML from the response
             aixm_xml = response.text.strip()
             
-            # Post-processing to ensure correct format
-            # Remove any XML declaration or root elements
             aixm_xml = re.sub(r'<\?xml[^>]*\?>|<aixm:PropertiesWithSchedule[^>]*>|</aixm:PropertiesWithSchedule>', '', aixm_xml)
-            
-            # Remove any code block markers that might be included
             aixm_xml = re.sub(r'```xml|```', '', aixm_xml).strip()
             
-            # Format times with a colon if needed (e.g., 0800 to 08:00)
             aixm_xml = re.sub(r'<aixm:startTime>(\d{2})(\d{2})</aixm:startTime>', r'<aixm:startTime>\1:\2</aixm:startTime>', aixm_xml)
             aixm_xml = re.sub(r'<aixm:endTime>(\d{2})(\d{2})</aixm:endTime>', r'<aixm:endTime>\1:\2</aixm:endTime>', aixm_xml)
             
@@ -133,7 +127,7 @@ async def convert_schedule(request: ScheduleRequest):
             logger.warning(f"Error with primary model: {str(model_error)}")
             logger.info("Attempting fallback to gemini-2.0-flash-lite model")
             
-            # Initialize the fallback model
+            #fallback model
             fallback_model = genai.GenerativeModel(
                 model_name="gemini-2.0-flash-lite",
                 generation_config={
@@ -142,7 +136,6 @@ async def convert_schedule(request: ScheduleRequest):
                 }
             )
             
-            # Create the prompt using the exact template provided
             prompt = f"""
     You are an expert system that converts aeronautical service schedules from natural language text into structured AIXM 5.1.1 XML format.
     
@@ -186,6 +179,28 @@ async def convert_schedule(request: ScheduleRequest):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+@app.get("/api/download-architecture-doc")
+async def download_architecture_doc():
+    """Generates and downloads the architecture document PDF."""
+    try:
+        logger.info("Received request for architecture document.")
+        generator = ArchitectureDocGenerator()
+        pdf_file_path = generator.generate_architecture_doc()
+
+        if not os.path.exists(pdf_file_path):
+            logger.error(f"Generated PDF file not found after generation attempt: {pdf_file_path}")
+            raise HTTPException(status_code=500, detail="Failed to generate or locate architecture document.")
+
+        logger.info(f"Sending PDF file: {pdf_file_path}")
+        return FileResponse(
+            path=pdf_file_path,
+            filename="aeronautical_converter_architecture.pdf",
+            media_type='application/pdf'
+        )
+    except Exception as e:
+        logger.exception("Error generating or serving architecture document")
+        raise HTTPException(status_code=500, detail=f"Error creating PDF: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

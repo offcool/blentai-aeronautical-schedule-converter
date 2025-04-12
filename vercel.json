@@ -1,0 +1,22 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "backend/app.py",
+        "use": "@vercel/python",
+        "config": {
+          "runtime": "python3.12"
+        }
+      },
+      {
+        "src": "package.json",
+        "use": "@vercel/next"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "/backend/app.py"
+      }
+    ]
+  }
