@@ -27,24 +27,16 @@ In the aeronautical domain, service schedules are often provided in varied textu
 ## Project Structure
 
 /
-├── app/                  # Next.js App Router (Frontend Pages & API Handlers)
-│   ├── api/              # Next.js API route handlers (e.g., potentially for non-Python tasks)
-│   └── ...               # Page routes (/, /about, /documentation)
+├── app/                 
+│   ├── api/            
 ├── backend/              # Python FastAPI Backend
 │   ├── app.py            # FastAPI application, API endpoints (/api/convert, /api/download...)
 │   ├── architecture_doc_generator.py # Logic for generating PDF doc
 │   └── requirements.txt  # Python dependencies
-├── components/           # Shared React components (UI)
-├── lib/                  # Frontend helper functions/libs (e.g., actions.ts)
-├── public/               # Static assets for Next.js
-├── styles/               # Global CSS / Tailwind base
 ├── .env.local            # Local environment variables (GITIGNORED!)
-├── .env.local.example    # Example environment file
 ├── vercel.json           # Vercel deployment configuration (builds, routes)
-├── package.json          # Node.js dependencies and scripts (pnpm)
-├── next.config.mjs       # Next.js configuration
-├── tailwind.config.ts    # Tailwind CSS configuration
-└── tsconfig.json         # TypeScript configuration
+├── package.json          
+└── tsconfig.json        
 
 
 ## Setup and Installation
